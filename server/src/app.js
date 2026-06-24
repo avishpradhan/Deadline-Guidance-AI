@@ -13,15 +13,31 @@ export const app = express();
 
 // Security & parsing
 app.use(helmet());
+
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.CLIENT_URL
-    : 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
 
 // Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.get('/healthz', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
